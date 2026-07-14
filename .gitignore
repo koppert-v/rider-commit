@@ -1,0 +1,7 @@
+.gradle/
+.gradle-user-home/
+.java-tmp/
+.idea/
+build/
+out/
+*.iml

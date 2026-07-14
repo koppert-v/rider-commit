@@ -1,0 +1,36 @@
+<idea-plugin>
+    <id>dev.koppert.rider-codex-commit</id>
+    <name>AI Commit for Rider</name>
+    <vendor>koppert</vendor>
+
+    <description><![CDATA[
+        Generates a commit message from the changes selected in the Commit tool window
+        by invoking the locally installed Codex CLI.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectConfigurable
+                parentId="tools"
+                id="dev.koppert.ridercommit.settings"
+                displayName="AI Commit"
+                instance="dev.koppert.ridercommit.settings.CodexCommitConfigurable"/>
+
+        <notificationGroup
+                id="Codex Commit"
+                displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action
+                id="dev.koppert.ridercommit.GenerateCommitMessage"
+                class="dev.koppert.ridercommit.GenerateCommitMessageSplitButtonAction"
+                text="Generate with AI CLI"
+                description="Generate a commit message or choose an AI CLI provider"
+                icon="/icons/codexCommit.svg">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
