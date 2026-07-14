@@ -21,6 +21,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Verify release tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $versionLine = Get-Content -LiteralPath "gradle.properties" |
+            Where-Object { $_ -match '^pluginVersion=' } |
+            Select-Object -First 1
+          $version = ($versionLine -split '=', 2)[1].Trim()
+          $expectedTag = "v$version"
+          if ("${{ github.ref_name }}" -ne $expectedTag) {
+            throw "Tag '${{ github.ref_name }}' does not match plugin version '$version'. Expected '$expectedTag'."
+          }
+
       - name: Set up Java 21
         uses: actions/setup-java@v5
         with:
@@ -37,7 +50,7 @@ jobs:
         run: ./gradlew clean test buildPlugin --no-parallel --stacktrace
 
       - name: Upload plugin artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: rider-commit-plugin
           path: build/distributions/*.zip
@@ -61,4 +74,57 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.zip --generate-notes --title "${GITHUB_REF_NAME}"
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" artifacts/*.zip --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" artifacts/*.zip --generate-notes --title "${GITHUB_REF_NAME}"
+          fi
+
+  publish-plugin-repository:
+    name: Publish Rider plugin repository
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download plugin artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: rider-commit-plugin
+          path: artifacts
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Prepare plugin repository
+        shell: pwsh
+        run: |
+          ./scripts/prepare-plugin-repository.ps1 `
+            -ArtifactDirectory "artifacts" `
+            -OutputDirectory "_site" `
+            -BaseUrl "${{ steps.pages.outputs.base_url }}" `
+            -Tag "${{ github.ref_name }}"
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
