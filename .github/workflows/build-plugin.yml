@@ -1,0 +1,64 @@
+name: Build Rider Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Test and build plugin
+        run: ./gradlew clean test buildPlugin --no-parallel --stacktrace
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: rider-commit-plugin
+          path: build/distributions/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download plugin artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: rider-commit-plugin
+          path: artifacts
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.zip --generate-notes --title "${GITHUB_REF_NAME}"

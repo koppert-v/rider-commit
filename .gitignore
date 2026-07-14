@@ -1,7 +1,43 @@
+# Gradle
 .gradle/
 .gradle-user-home/
-.java-tmp/
-.idea/
 build/
 out/
+local.properties
+
+# IntelliJ Platform plugin development
+.intellijPlatform/
+
+# Rider / IntelliJ IDEA
+.idea/
 *.iml
+
+# Kotlin / Java
+.kotlin/
+.java-tmp/
+*.class
+*.hprof
+hs_err_pid*.log
+replay_pid*.log
+
+# Local agent data
+.agents/
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+*.local.properties
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
