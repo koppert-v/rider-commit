@@ -41,12 +41,8 @@ jobs:
               throw "pluginVersion '$sourceVersion' must use the major.minor.patch format."
             }
 
-            $major = $Matches[1]
-            $minor = $Matches[2]
-            $version = "$major.$minor.${{ github.run_number }}"
-
             if (git tag --list "v$version") {
-              $version = "$major.$minor.${{ github.run_id }}"
+              throw "Tag 'v$version' already exists. Increase pluginVersion before the next release."
             }
           }
 
