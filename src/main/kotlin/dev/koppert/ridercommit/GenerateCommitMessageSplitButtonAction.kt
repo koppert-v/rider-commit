@@ -18,8 +18,8 @@ private class ProviderActionGroup : ActionGroup() {
     private val actionsById = mutableMapOf<String, ProviderConfigurationAction>()
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
-        val project = e?.project ?: return emptyArray()
-        val settings = CodexCommitSettings.getInstance(project)
+        if (e?.project == null) return emptyArray()
+        val settings = CodexCommitSettings.getInstance()
         val selectedId = settings.selectedOrActiveProvider()?.id
         val configurations = settings.state.providerConfigurations.sortedWith(
             compareBy<CodexCommitSettings.ProviderConfigurationState> { it.id != selectedId }
@@ -48,14 +48,14 @@ private class ProviderConfigurationAction(
     private val providerConfigurationId: String,
 ) : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
-        CodexCommitSettings.getInstance(project).selectProviderForSession(providerConfigurationId)
+        if (e.project == null) return
+        CodexCommitSettings.getInstance().selectProviderForSession(providerConfigurationId)
         GenerateCommitMessageAction.generate(e, providerConfigurationId)
     }
 
     override fun update(e: AnActionEvent) {
         val configuration = e.project
-            ?.let(CodexCommitSettings::getInstance)
+            ?.let { CodexCommitSettings.getInstance() }
             ?.state
             ?.providerConfigurations
             ?.firstOrNull { it.id == providerConfigurationId }

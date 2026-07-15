@@ -1,21 +1,18 @@
 package dev.koppert.ridercommit.settings
 
-import com.intellij.openapi.project.Project
 import dev.koppert.ridercommit.AiProvider
 import java.nio.file.FileVisitOption
 import java.nio.file.Files
 import java.nio.file.Path
 
 object SkillDiscovery {
-    fun find(provider: AiProvider, project: Project): List<String> {
-        val projectDirectory = project.basePath?.let(Path::of)
+    fun find(provider: AiProvider): List<String> {
         val homeDirectory = System.getProperty("user.home")?.takeIf(String::isNotBlank)?.let(Path::of)
         val skillRoots = linkedSetOf<Path>()
         val commandRoots = linkedSetOf<Path>()
 
         when (provider) {
             AiProvider.CODEX -> {
-                projectDirectory?.let { addProjectRoots(it, ".agents/skills", skillRoots) }
                 homeDirectory?.resolve(".agents/skills")?.let(skillRoots::add)
                 val codexHome = System.getenv("CODEX_HOME")
                     ?.takeIf(String::isNotBlank)
@@ -25,10 +22,6 @@ object SkillDiscovery {
             }
 
             AiProvider.CLAUDE_CODE -> {
-                projectDirectory?.let {
-                    addProjectRoots(it, ".claude/skills", skillRoots)
-                    addProjectRoots(it, ".claude/commands", commandRoots)
-                }
                 homeDirectory?.resolve(".claude/skills")?.let(skillRoots::add)
                 homeDirectory?.resolve(".claude/commands")?.let(commandRoots::add)
             }
@@ -77,15 +70,6 @@ object SkillDiscovery {
                 ?.takeIf(String::isNotBlank)
         }
     }.getOrNull() ?: skillFile.parent.fileName.toString()
-
-    private fun addProjectRoots(start: Path, relativePath: String, target: MutableSet<Path>) {
-        var directory: Path? = start.toAbsolutePath().normalize()
-        while (directory != null) {
-            target.add(directory.resolve(relativePath))
-            if (Files.exists(directory.resolve(".git"))) break
-            directory = directory.parent
-        }
-    }
 
     private fun listChildren(root: Path, action: (Path) -> Unit) {
         if (!Files.isDirectory(root)) return

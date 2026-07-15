@@ -1,10 +1,18 @@
 package dev.koppert.ridercommit
 
+import com.intellij.openapi.components.Service
 import dev.koppert.ridercommit.settings.CodexCommitSettings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class CodexCommitSettingsMigrationTest {
+    @Test
+    fun `settings service is application scoped`() {
+        val annotation = CodexCommitSettings::class.java.getAnnotation(Service::class.java)
+
+        assertEquals(Service.Level.APP, annotation.value.single())
+    }
+
     @Test
     fun `migrates legacy Codex and Claude settings into provider configurations`() {
         val legacy = CodexCommitSettings.SettingsState().also {

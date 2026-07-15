@@ -2,7 +2,6 @@ package dev.koppert.ridercommit.settings
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SearchableConfigurable
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
@@ -41,7 +40,7 @@ import javax.swing.SwingUtilities
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
 
-class CodexCommitConfigurable(private val project: Project) : SearchableConfigurable {
+class CodexCommitConfigurable : SearchableConfigurable {
     private val providerConfigurations = mutableListOf<ProviderConfigurationState>()
     private val providerTableModel = ProviderTableModel(providerConfigurations)
     private val providerTable = JBTable(providerTableModel)
@@ -105,7 +104,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
     }
 
     override fun isModified(): Boolean {
-        val state = CodexCommitSettings.getInstance(project).state
+        val state = CodexCommitSettings.getInstance().state
         val selectedProviderId = (activeProviderField.selectedItem as? ProviderConfigurationState)?.id.orEmpty()
         return selectedProviderId != state.activeProviderId ||
             !sameConfigurations(providerConfigurations, state.providerConfigurations) ||
@@ -118,7 +117,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
     }
 
     override fun apply() {
-        val state = CodexCommitSettings.getInstance(project).state
+        val state = CodexCommitSettings.getInstance().state
         state.providerConfigurations = providerConfigurations.map { it.copyState() }.toMutableList()
         state.activeProviderId = (activeProviderField.selectedItem as? ProviderConfigurationState)?.id
             ?: state.providerConfigurations.first().id
@@ -132,7 +131,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
     }
 
     override fun reset() {
-        val state = CodexCommitSettings.getInstance(project).state
+        val state = CodexCommitSettings.getInstance().state
         providerConfigurations.clear()
         providerConfigurations += state.providerConfigurations.map { it.copyState() }
         providerTableModel.fireTableDataChanged()
@@ -159,7 +158,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
             it.executablePath = provider.defaultExecutable
             it.effort = "medium"
         }
-        val dialog = ProviderConfigurationDialog(project, configuration, true)
+        val dialog = ProviderConfigurationDialog(configuration, true)
         if (!dialog.showAndGet()) return
 
         providerConfigurations += dialog.result()
@@ -173,7 +172,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
         val row = providerTable.selectedRow
         if (row !in providerConfigurations.indices) return
 
-        val dialog = ProviderConfigurationDialog(project, providerConfigurations[row], false)
+        val dialog = ProviderConfigurationDialog(providerConfigurations[row], false)
         if (!dialog.showAndGet()) return
 
         val previousActiveId = (activeProviderField.selectedItem as? ProviderConfigurationState)?.id
@@ -187,7 +186,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
         val row = providerTable.selectedRow
         if (row !in providerConfigurations.indices) return
         if (providerConfigurations.size == 1) {
-            Messages.showInfoMessage(project, "At least one provider configuration is required.", "Provider Required")
+            Messages.showInfoMessage("At least one provider configuration is required.", "Provider Required")
             return
         }
 
@@ -254,13 +253,12 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
     }
 
     private class ProviderConfigurationDialog(
-        project: Project,
         configuration: ProviderConfigurationState,
         private val isNew: Boolean,
-    ) : DialogWrapper(project, true) {
+    ) : DialogWrapper(true) {
         private val editors: List<ProviderEditor> = if (isNew) {
             AiProvider.entries.map { provider ->
-                ProviderEditor(project, configuration.copyState().also {
+                ProviderEditor(configuration.copyState().also {
                     it.name = provider.displayName
                     it.providerId = provider.id
                     it.executablePath = provider.defaultExecutable
@@ -271,7 +269,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
                 })
             }
         } else {
-            listOf(ProviderEditor(project, configuration.copyState()))
+            listOf(ProviderEditor(configuration.copyState()))
         }
         private var selectedEditor = editors.first()
 
@@ -316,7 +314,6 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
     }
 
     private class ProviderEditor(
-        project: Project,
         private val source: ProviderConfigurationState,
     ) {
         val provider = AiProvider.fromId(source.providerId)
@@ -324,7 +321,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
         private val executablePathField = TextFieldWithBrowseButton()
         private val modelField = editableComboBox(ProviderOptions.models(provider), source.model)
         private val effortField = ComboBox(provider.supportedEfforts.toTypedArray())
-        private val skillField = editableComboBox(SkillDiscovery.find(provider, project), source.skill)
+        private val skillField = editableComboBox(SkillDiscovery.find(provider), source.skill)
         private val additionalPromptField = JBTextArea(source.additionalPrompt, 5, 40).apply {
             lineWrap = true
             wrapStyleWord = true
@@ -335,7 +332,7 @@ class CodexCommitConfigurable(private val project: Project) : SearchableConfigur
             executablePathField.addBrowseFolderListener(
                 "Select ${provider.displayName} executable",
                 "Select the executable used by this provider configuration.",
-                project,
+                null,
                 FileChooserDescriptorFactory.createSingleFileDescriptor(),
             )
             effortField.selectedItem = source.effort.takeIf { it in provider.supportedEfforts } ?: "medium"

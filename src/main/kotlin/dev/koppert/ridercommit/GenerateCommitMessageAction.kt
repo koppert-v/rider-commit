@@ -39,7 +39,7 @@ class GenerateCommitMessageAction : AnAction(), DumbAware {
             notify(project, "Select at least one change in the Commit tool window", NotificationType.WARNING)
             return
         }
-        val settingsService = CodexCommitSettings.getInstance(project)
+        val settingsService = CodexCommitSettings.getInstance()
         val settings = settingsService.state
         val providerConfiguration = providerConfigurationId
             ?.let { selectedId -> settings.providerConfigurations.firstOrNull { it.id == selectedId } }

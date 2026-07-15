@@ -1,13 +1,13 @@
 package dev.koppert.ridercommit.settings
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.project.Project
 import dev.koppert.ridercommit.AiProvider
 
-@Service(Service.Level.PROJECT)
+@Service(Service.Level.APP)
 @State(name = "CodexCommitSettings", storages = [Storage("rider-codex-commit.xml")])
 class CodexCommitSettings : PersistentStateComponent<CodexCommitSettings.SettingsState> {
     private var state = SettingsState().also(::ensureProviderConfigurations)
@@ -80,8 +80,8 @@ class CodexCommitSettings : PersistentStateComponent<CodexCommitSettings.Setting
         const val DEFAULT_CODEX_ID = "default-codex"
         const val DEFAULT_CLAUDE_ID = "default-claude"
 
-        fun getInstance(project: Project): CodexCommitSettings =
-            project.getService(CodexCommitSettings::class.java)
+        fun getInstance(): CodexCommitSettings =
+            ApplicationManager.getApplication().getService(CodexCommitSettings::class.java)
 
         private fun ensureProviderConfigurations(state: SettingsState) {
             if (state.providerConfigurations.isEmpty()) {

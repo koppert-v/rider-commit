@@ -12,7 +12,7 @@
     <depends>Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectConfigurable
+        <applicationConfigurable
                 parentId="tools"
                 id="dev.koppert.ridercommit.settings"
                 displayName="AI Commit"
