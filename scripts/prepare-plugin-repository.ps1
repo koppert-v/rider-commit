@@ -10,7 +10,9 @@ param(
     [string]$BaseUrl,
 
     [Parameter(Mandatory = $true)]
-    [string]$Tag
+    [string]$Tag,
+
+    [string]$Version
 )
 
 Set-StrictMode -Version Latest
@@ -54,7 +56,11 @@ function Get-XmlText {
     return ([string]$Value).Trim()
 }
 
-$version = Get-GradleProperty -Path $gradlePropertiesPath -Name "pluginVersion"
+$version = if ([string]::IsNullOrWhiteSpace($Version)) {
+    Get-GradleProperty -Path $gradlePropertiesPath -Name "pluginVersion"
+} else {
+    $Version.Trim()
+}
 $expectedTag = "v$version"
 if ($Tag -ne $expectedTag) {
     throw "Release tag '$Tag' does not match plugin version '$version'. Expected '$expectedTag'."
